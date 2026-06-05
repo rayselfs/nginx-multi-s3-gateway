@@ -1,0 +1,143 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/rayselfs/nginx-multi-s3-gateway
+  pullPolicy: IfNotPresent
+  # Overrides Chart.appVersion when set
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Create a ServiceAccount. For IRSA, annotate it with the IAM role ARN.
+  create: true
+  annotations: {}
+    # eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/my-s3-role
+  name: ""
+
+podAnnotations: {}
+podSecurityContext: {}
+securityContext: {}
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # cert-manager.io/cluster-issuer: letsencrypt-prod
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  # - secretName: chart-example-tls
+  #   hosts:
+  #     - chart-example.local
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+pdb:
+  enabled: true
+  minAvailable: 1
+  # maxUnavailable: 1
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# ---------------------------------------------------------------------------
+# S3 / AWS configuration
+# ---------------------------------------------------------------------------
+s3:
+  # REQUIRED: default/fallback bucket when no X-S3-Bucket header is present
+  bucketName: ""
+  server: s3.amazonaws.com
+  serverPort: 443
+  serverProto: https
+  region: us-east-1
+  # URL style: virtual | virtual-v2 | path
+  #   virtual    - Host header = <bucket>.<server>          (recommended)
+  #   virtual-v2 - Host header = <bucket>.<server>:<port>  (some MinIO setups)
+  #   path       - Host header = <server>:<port>, bucket in URI path
+  style: virtual
+  # Non-IRSA only: name of a pre-existing Secret with keys:
+  #   AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+  existingSecret: ""
+
+aws:
+  sigVersion: "4"
+
+# ---------------------------------------------------------------------------
+# NGINX tuning
+# ---------------------------------------------------------------------------
+nginx:
+  proxyCacheValidOk: "1h"
+  proxyCacheValidNotfound: "1m"
+  proxyCacheValidForbidden: "30s"
+  proxyCacheUseStale: "error timeout updating http_500 http_502 http_503 http_504"
+  proxyCacheSliceSize: "1m"
+  corsEnabled: false
+  allowDirectoryList: false
+  # Optional path rewriting
+  stripLeadingDirectoryPath: ""
+  prefixLeadingDirectoryPath: ""
+  directoryListingPathPrefix: ""
+  # Override the DNS resolver used by NGINX's upstream resolve directive.
+  # Leave empty to let the upstream entrypoint auto-detect from /etc/resolv.conf.
+  # Example for EKS: "172.20.0.10 valid=5s ipv6=off"
+  dnsResolvers: ""
+
+# ---------------------------------------------------------------------------
+# Bucket whitelist
+# Each entry: { name: "bucket-name" }
+# Requests carrying X-S3-Bucket: <name> will be routed to that bucket.
+# Values not in this list fall back silently to s3.bucketName.
+# ---------------------------------------------------------------------------
+buckets: []
+# - name: bucket-prod
+# - name: bucket-staging
+
+# ---------------------------------------------------------------------------
+# Metrics – nginx-prometheus-exporter sidecar
+# ---------------------------------------------------------------------------
+metrics:
+  enabled: false
+  image:
+    repository: nginx/nginx-prometheus-exporter
+    tag: "1.1.0"
+    pullPolicy: IfNotPresent
+  port: 9113
+  resources:
+    limits:
+      cpu: 100m
+      memory: 64Mi
+    requests:
+      cpu: 50m
+      memory: 32Mi
+  serviceMonitor:
+    enabled: false
+    # Namespace to create the ServiceMonitor in (defaults to Release.Namespace)
+    namespace: ""
+    interval: "30s"
+    scrapeTimeout: "10s"
+    # Extra labels to add to the ServiceMonitor (e.g. for Prometheus selector)
+    labels: {}

@@ -1,0 +1,40 @@
+{{- $svcName := include "nginx-multi-s3-gateway.fullname" . }}
+Nginx Multi-S3 Gateway deployed to namespace {{ .Release.Namespace }}.
+
+1. Get the application URL:
+{{- if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}
+{{- end }}
+{{- else if contains "NodePort" .Values.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ $svcName }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.service.type }}
+  export SERVICE_IP=$(kubectl get svc --namespace {{ .Release.Namespace }} {{ $svcName }} \
+    --template "{{ "{{ range (index .status.loadBalancer.ingress 0) }}{{ . }}{{ end }}" }}")
+  echo http://$SERVICE_IP:{{ .Values.service.port }}
+{{- else }}
+  kubectl --namespace {{ .Release.Namespace }} port-forward svc/{{ $svcName }} 8080:{{ .Values.service.port }}
+  Then visit: http://localhost:8080
+{{- end }}
+
+2. Multi-bucket routing:
+   Send requests with:  X-S3-Bucket: <bucket-name>
+   Whitelisted buckets ({{ len .Values.buckets }}):
+{{- if .Values.buckets }}
+{{- range .Values.buckets }}
+   - {{ .name }}
+{{- end }}
+{{- else }}
+   (none – only the default bucket is accessible)
+{{- end }}
+
+3. Default bucket: {{ .Values.s3.bucketName }}
+{{- if .Values.metrics.enabled }}
+
+4. Metrics sidecar (nginx-prometheus-exporter) on port {{ .Values.metrics.port }}.
+{{- if .Values.metrics.serviceMonitor.enabled }}
+   ServiceMonitor created in namespace: {{ .Values.metrics.serviceMonitor.namespace | default .Release.Namespace }}
+{{- end }}
+{{- end }}
