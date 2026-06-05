@@ -1,0 +1,273 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "nginx-multi-s3-gateway values",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "replicaCount": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of pod replicas. Ignored when autoscaling.enabled=true."
+    },
+    "image": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "repository": { "type": "string" },
+        "pullPolicy": {
+          "type": "string",
+          "enum": ["Always", "IfNotPresent", "Never"]
+        },
+        "tag": { "type": "string" }
+      }
+    },
+    "imagePullSecrets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" }
+        }
+      }
+    },
+    "nameOverride": { "type": "string" },
+    "fullnameOverride": { "type": "string" },
+    "serviceAccount": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "create": { "type": "boolean" },
+        "annotations": { "type": "object" },
+        "name": { "type": "string" }
+      }
+    },
+    "podAnnotations": { "type": "object" },
+    "podSecurityContext": { "type": "object" },
+    "securityContext": { "type": "object" },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["ClusterIP", "NodePort", "LoadBalancer", "ExternalName"]
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        }
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "className": { "type": "string" },
+        "annotations": { "type": "object" },
+        "hosts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["host", "paths"],
+            "properties": {
+              "host": { "type": "string" },
+              "paths": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["path", "pathType"],
+                  "properties": {
+                    "path": { "type": "string" },
+                    "pathType": {
+                      "type": "string",
+                      "enum": ["Prefix", "Exact", "ImplementationSpecific"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tls": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "secretName": { "type": "string" },
+              "hosts": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "properties": {
+        "limits": { "type": "object" },
+        "requests": { "type": "object" }
+      }
+    },
+    "autoscaling": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "minReplicas": { "type": "integer", "minimum": 1 },
+        "maxReplicas": { "type": "integer", "minimum": 1 },
+        "targetCPUUtilizationPercentage": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    },
+    "pdb": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "minAvailable": {
+          "oneOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "string", "pattern": "^[0-9]+%$" }
+          ],
+          "description": "Minimum available pods. Integer or percentage string (e.g. '50%')."
+        },
+        "maxUnavailable": {
+          "oneOf": [
+            { "type": "integer", "minimum": 0 },
+            { "type": "string", "pattern": "^[0-9]+%$" }
+          ],
+          "description": "Maximum unavailable pods. Integer or percentage string."
+        }
+      }
+    },
+    "nodeSelector": { "type": "object" },
+    "tolerations": { "type": "array" },
+    "affinity": { "type": "object" },
+    "s3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bucketName"],
+      "properties": {
+        "bucketName": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Default/fallback S3 bucket name. Required."
+        },
+        "server": { "type": "string" },
+        "serverPort": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "serverProto": {
+          "type": "string",
+          "enum": ["http", "https"]
+        },
+        "region": { "type": "string" },
+        "style": {
+          "type": "string",
+          "enum": ["virtual", "virtual-v2", "path"],
+          "description": "S3 URL style. 'virtual' is recommended for AWS S3."
+        },
+        "existingSecret": {
+          "type": "string",
+          "description": "Name of a Secret containing AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY. Omit when using IRSA."
+        }
+      }
+    },
+    "aws": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sigVersion": {
+          "type": "string",
+          "enum": ["2", "4"],
+          "description": "AWS Signature version. Use '4' unless targeting very old S3-compatible APIs."
+        }
+      }
+    },
+    "nginx": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "proxyCacheValidOk":         { "type": "string" },
+        "proxyCacheValidNotfound":   { "type": "string" },
+        "proxyCacheValidForbidden":  { "type": "string" },
+        "proxyCacheUseStale":        { "type": "string" },
+        "proxyCacheSliceSize":       { "type": "string" },
+        "corsEnabled":               { "type": "boolean" },
+        "allowDirectoryList":        { "type": "boolean" },
+        "stripLeadingDirectoryPath": { "type": "string" },
+        "prefixLeadingDirectoryPath":{ "type": "string" },
+        "directoryListingPathPrefix":{ "type": "string" },
+        "dnsResolvers":              { "type": "string" }
+      }
+    },
+    "buckets": {
+      "type": "array",
+      "description": "Bucket whitelist for X-S3-Bucket header routing. Unlisted values fall back to s3.bucketName.",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "S3 bucket name (must match the actual bucket name in AWS)."
+          }
+        }
+      }
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "image": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "repository":  { "type": "string" },
+            "tag":         { "type": "string" },
+            "pullPolicy": {
+              "type": "string",
+              "enum": ["Always", "IfNotPresent", "Never"]
+            }
+          }
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "limits":   { "type": "object" },
+            "requests": { "type": "object" }
+          }
+        },
+        "serviceMonitor": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "enabled":       { "type": "boolean" },
+            "namespace":     { "type": "string" },
+            "interval":      { "type": "string" },
+            "scrapeTimeout": { "type": "string" },
+            "labels":        { "type": "object" }
+          }
+        }
+      }
+    }
+  }
+}
