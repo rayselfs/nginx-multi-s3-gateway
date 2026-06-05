@@ -1,0 +1,40 @@
+# This configuration should dynamically reload S3 backends
+# as they change in DNS.
+
+# Use NGINX's non-blocking DNS resolution
+resolver ${DNS_RESOLVERS};
+
+# Default upstream – used when no X-S3-Bucket header is present or the value
+# is not in the whitelist. Built from S3_UPSTREAM which is derived from
+# S3_BUCKET_NAME / S3_SERVER at container start by the entrypoint script.
+upstream storage_urls {
+    zone s3_backends 64k;
+
+    server ${S3_UPSTREAM} resolve;
+    keepalive 32;
+}
+
+# ---------------------------------------------------------------------------
+# Per-bucket upstreams (for S3_STYLE=virtual-v2 only)
+#
+# For S3_STYLE=virtual (default) and S3_STYLE=path, the default storage_urls
+# upstream above is sufficient – all buckets share the same S3 endpoint and
+# the Host header alone identifies the bucket.
+#
+# For S3_STYLE=virtual-v2, the DNS target includes the bucket name
+# (e.g. bucket.s3.amazonaws.com), so each bucket needs its own upstream.
+# Uncomment and duplicate the block below for every bucket you added to the
+# map directives in default.conf.template.
+#
+# upstream storage_bucket_prod {
+#     zone s3_bucket_prod 64k;
+#     server bucket-prod.${S3_SERVER}:${S3_SERVER_PORT} resolve;
+#     keepalive 32;
+# }
+#
+# upstream storage_bucket_staging {
+#     zone s3_bucket_staging 64k;
+#     server bucket-staging.${S3_SERVER}:${S3_SERVER_PORT} resolve;
+#     keepalive 32;
+# }
+# ---------------------------------------------------------------------------
