@@ -34,49 +34,33 @@ Client  ────────────────────────
 |---|---|
 | Kubernetes | 1.25+ |
 | Helm | 3.10+ |
-| AWS | S3 access via IRSA (recommended) or static credentials |
+| AWS | S3 access via EKS Pod Identity (recommended), IRSA, or static credentials |
 
 ## Installation
-
-### 1. Authenticate to GHCR (one-time)
-
-```bash
-echo $GITHUB_TOKEN | helm registry login ghcr.io --username <github-username> --password-stdin
-```
-
-> If the package is public, skip this step.
-
-### 2. Create a `values.yaml`
-
-Minimum viable values for EKS with IRSA:
-
-```yaml
-s3:
-  bucketName: my-default-bucket   # required: fallback when no X-S3-Bucket header
-  region: ap-northeast-1
-
-serviceAccount:
-  annotations:
-    eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/nginx-s3-gateway-role
-```
-
-### 3. Install
 
 ```bash
 helm install my-gateway \
   oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway \
-  --version 0.1.0 \
+  --version 0.1.1 \
   --namespace my-namespace \
   --create-namespace \
-  -f values.yaml
+  --set s3.bucketName=my-default-bucket \
+  --set s3.region=ap-northeast-1
 ```
+
+> **Private registry only**: if the GHCR package is private, authenticate first:
+> ```bash
+> echo $GITHUB_TOKEN | helm registry login ghcr.io --username <username> --password-stdin
+> ```
+
+See [Configuration](#configuration) for credentials and all available options.
 
 ### Upgrade (add/remove buckets, config changes)
 
 ```bash
 helm upgrade my-gateway \
   oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway \
-  --version 0.1.0 \
+  --version 0.1.1 \
   --namespace my-namespace \
   -f values.yaml
 ```
@@ -93,14 +77,80 @@ helm uninstall my-gateway --namespace my-namespace
 
 ## Configuration
 
-### IRSA (recommended for EKS)
+### EKS Pod Identity (recommended)
 
-Create an IAM role with the following trust policy and attach `s3:GetObject` (+ `s3:ListBucket` if directory listing is enabled) on the target buckets.
+Newer than IRSA, simpler to operate — no OIDC trust policy required on the IAM role.
+
+**1. Enable the Pod Identity Agent add-on** (one-time per cluster):
+
+```bash
+aws eks create-addon \
+  --cluster-name my-cluster \
+  --addon-name eks-pod-identity-agent
+```
+
+**2. IAM role trust policy**:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": { "Service": "pods.eks.amazonaws.com" },
+    "Action": ["sts:AssumeRole", "sts:TagSession"]
+  }]
+}
+```
+
+Attach `s3:GetObject` (+ `s3:ListBucket` if directory listing is enabled) to the role.
+
+**3. Create the Pod Identity association** (default SA name is `<release>-nginx-multi-s3-gateway`):
+
+```bash
+aws eks create-pod-identity-association \
+  --cluster-name my-cluster \
+  --namespace my-namespace \
+  --service-account my-gateway-nginx-multi-s3-gateway \
+  --role-arn arn:aws:iam::123456789012:role/nginx-s3-gateway-role
+```
+
+**4. Install** — no annotations needed:
+
+```yaml
+# values.yaml
+s3:
+  bucketName: my-default-bucket
+  region: ap-northeast-1
+```
+
+### IRSA
+
+Requires an OIDC provider associated with the cluster. Use when the Pod Identity Agent cannot be installed.
+
+**IAM role trust policy**:
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [{
+    "Effect": "Allow",
+    "Principal": {
+      "Federated": "arn:aws:iam::123456789012:oidc-provider/oidc.eks.ap-northeast-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE"
+    },
+    "Action": "sts:AssumeRoleWithWebIdentity",
+    "Condition": {
+      "StringEquals": {
+        "oidc.eks.ap-northeast-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE:sub":
+          "system:serviceaccount:my-namespace:my-gateway-nginx-multi-s3-gateway"
+      }
+    }
+  }]
+}
+```
 
 ```yaml
 # values.yaml
 serviceAccount:
-  create: true
   annotations:
     eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/nginx-s3-gateway-role
 
