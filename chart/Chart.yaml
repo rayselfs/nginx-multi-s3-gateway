@@ -1,0 +1,20 @@
+apiVersion: v2
+name: nginx-multi-s3-gateway
+description: >
+  Multi-bucket NGINX S3 gateway with dynamic per-request routing via
+  X-S3-Bucket header. Bucket whitelist is runtime-configurable via Helm;
+  a rolling restart is triggered automatically on helm upgrade.
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - nginx
+  - s3
+  - gateway
+  - proxy
+home: https://github.com/rayselfs/nginx-multi-s3-gateway
+sources:
+  - https://github.com/rayselfs/nginx-multi-s3-gateway
+  - https://github.com/nginxinc/nginx-s3-gateway
+maintainers:
+  - name: rayselfs

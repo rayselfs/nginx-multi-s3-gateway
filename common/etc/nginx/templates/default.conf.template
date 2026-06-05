@@ -27,46 +27,13 @@ map $uri_full_path $uri_path {
 }
 
 # ---------------------------------------------------------------------------
-# Dynamic bucket routing via X-S3-Bucket request header (whitelist)
-#
-# HOW TO ADD A BUCKET:
-#   1. Add the bucket name to all three maps below (uncomment the examples).
-#   2. For S3_STYLE=virtual or S3_STYLE=path: no upstream change needed.
-#      For S3_STYLE=virtual-v2: also add a named upstream in upstreams.conf.template
-#      and uncomment the corresponding line in $s3_upstream map.
-#   3. Rebuild the Docker image.
-#
-# SECURITY: Any X-S3-Bucket value NOT in the whitelist resolves to "" which
-#           silently falls back to the default S3_BUCKET_NAME. Attackers cannot
-#           access arbitrary buckets.
+# Dynamic bucket routing via X-S3-Bucket request header (whitelist).
+# The bucket map is rendered by Helm and mounted as a ConfigMap at:
+#   /etc/nginx/conf.d/gateway/bucket-map.conf
+# Re-deploy (helm upgrade) to add/remove buckets; the checksum annotation
+# on the Deployment triggers a rolling restart automatically.
 # ---------------------------------------------------------------------------
-
-# 1. Whitelist: X-S3-Bucket header value → canonical bucket name.
-#    Unlisted values → "" → fallback to default S3_BUCKET_NAME.
-map $http_x_s3_bucket $s3_bucket_name_var {
-    default             "";
-    # "bucket-prod"     "bucket-prod";
-    # "bucket-staging"  "bucket-staging";
-}
-
-# 2. Bucket name → S3 Host header value (used for proxy Host header + NJS signing).
-#    virtual/virtual-v2 style: <bucket>.S3_SERVER   e.g. bucket.s3.amazonaws.com
-#    path style:               S3_SERVER             (same host for all buckets)
-map $s3_bucket_name_var $s3_host {
-    default             "${S3_HOST_HEADER}";
-    # "bucket-prod"     "bucket-prod.${S3_SERVER}";
-    # "bucket-staging"  "bucket-staging.${S3_SERVER}";
-}
-
-# 3. Bucket name → upstream group.
-#    virtual/path style: all buckets share storage_urls (same S3 endpoint).
-#    virtual-v2 style:   each bucket needs its own upstream; add entries below
-#                        and define matching upstreams in upstreams.conf.template.
-map $s3_bucket_name_var $s3_upstream {
-    default             "storage_urls";
-    # "bucket-prod"     "storage_bucket_prod";
-    # "bucket-staging"  "storage_bucket_staging";
-}
+include /etc/nginx/conf.d/gateway/bucket-map.conf;
 
 js_var $indexIsEmpty true;
 js_var $forIndexPage true;
@@ -117,6 +84,12 @@ server {
 
     location /health {
         return 200;
+    }
+
+    location /stub_status {
+        stub_status;
+        allow 127.0.0.1;
+        deny  all;
     }
 
     location / {

@@ -1,2 +1,22 @@
-.omo/
+# Environment files
 .env
+.env.local
+*.env
+
+# Keep the example
+!.env.example
+
+# macOS
+.DS_Store
+
+# Editor directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Helm build artifacts
+*.tgz
+
+# OpenCode session files
+.omo/

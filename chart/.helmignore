@@ -1,0 +1,14 @@
+# Patterns to ignore when building packages.
+.DS_Store
+# Common VCS dirs
+.git/
+.gitignore
+.gitmodules
+# CI/CD
+.github/
+azure-pipelines.yaml
+# Docs and dev files
+*.md
+.env*
+# Helm test results
+*.tgz

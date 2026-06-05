@@ -3,7 +3,7 @@
 # ─── Upstream base image ──────────────────────────────────────────────────────
 # Pin the tag to control when you absorb upstream changes.
 # Available tags: https://hub.docker.com/r/nginxinc/nginx-s3-gateway/tags
-ARG BASE_IMAGE=nginxinc/nginx-s3-gateway:latest-njs-oss
+ARG BASE_IMAGE=nginxinc/nginx-s3-gateway:latest-njs-oss-20260413
 FROM ${BASE_IMAGE}
 
 # ─── Overlay: only the files we modified ──────────────────────────────────────
