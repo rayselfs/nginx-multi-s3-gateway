@@ -49,23 +49,27 @@ SA name default: `<release-name>-nginx-multi-s3-gateway`. If `fullnameOverride: 
 | Workflow | Trigger | What it does |
 |---|---|---|
 | `ci.yml` | PR → main | Docker build only (no push) |
-| `ci.yml` | push → main | Build + push `latest` + `sha-<short>` to GHCR ⚠️ redundant, pending removal |
 | `release.yml` | `git tag v*` | Build + push versioned image + Helm chart to GHCR |
 
 **Release flow:**
 ```bash
-git tag v0.2.0
-git push origin v0.2.0
+git tag v0.3.0
+git push origin v0.3.0
 ```
 
 `release.yml` auto-stamps `chart/Chart.yaml` (`version:` and `appVersion:`) from the tag using `sed` — do not rely on the value committed in `Chart.yaml` for what was actually published. Only bump `Chart.yaml` manually when preparing a chart-only change that needs to be tracked in the branch.
 
-## GHCR packages are private
+**Release checklist** — every time `chart/Chart.yaml` version is bumped:
+1. Update all `--version X.Y.Z` references in `README.md`
+2. Update all `--version X.Y.Z` and `tag: "X.Y.Z"` references in `chart/README.md`
+3. Document any new values in both README files (Configuration section + values table)
 
-Both the Docker image and the Helm chart OCI package require authentication:
+## GHCR packages are public
+
+The Docker image and Helm chart OCI package are public — no authentication required:
 
 ```bash
-echo $GITHUB_TOKEN | helm registry login ghcr.io --username <username> --password-stdin
+helm pull oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway --version 0.3.0
 ```
 
 ## Base image update
@@ -75,7 +79,3 @@ Pin is in `Dockerfile` line 6:
 ARG BASE_IMAGE=nginxinc/nginx-s3-gateway:latest-njs-oss-<date>
 ```
 Check available tags at https://hub.docker.com/r/nginxinc/nginx-s3-gateway/tags. After updating, tag and push a new release.
-
-## Known open issue
-
-`ci.yml` still has `push: branches: [main]` which fires a Docker build + GHCR push on every merge (including docs-only PRs). This is redundant with `release.yml`. Intended fix: remove the `push: branches: [main]` trigger and keep only `pull_request`.
