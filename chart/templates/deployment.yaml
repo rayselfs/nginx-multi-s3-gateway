@@ -98,10 +98,8 @@ spec:
             - name: CORS_ENABLED
               value: {{ ternary "1" "0" .Values.nginx.corsEnabled | quote }}
             # --- Optional features ---
-            {{- if .Values.nginx.allowDirectoryList }}
             - name: ALLOW_DIRECTORY_LIST
-              value: "1"
-            {{- end }}
+              value: {{ ternary "1" "0" .Values.nginx.allowDirectoryList | quote }}
             {{- if .Values.nginx.stripLeadingDirectoryPath }}
             - name: STRIP_LEADING_DIRECTORY_PATH
               value: {{ .Values.nginx.stripLeadingDirectoryPath | quote }}
