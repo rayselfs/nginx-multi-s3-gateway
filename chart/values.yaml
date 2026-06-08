@@ -136,6 +136,10 @@ nginx:
   # Semicolon-separated header prefixes allowed through to the client (lowercase)
   # e.g. "x-amz-;x-custom-"  (use with caution)
   headerPrefixesAllowed: ""
+  # List of PCRE regex patterns for request paths that bypass the proxy cache.
+  # Patterns are OR-combined at render time (e.g. ['\.json$', '\.sh$']).
+  # Empty list disables per-path bypass.
+  proxyCacheBypassPaths: []
 
 # ---------------------------------------------------------------------------
 # Bucket whitelist

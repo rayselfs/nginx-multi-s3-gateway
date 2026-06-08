@@ -5,7 +5,7 @@ description: >
   X-S3-Bucket header. Bucket whitelist is runtime-configurable via Helm;
   a rolling restart is triggered automatically on helm upgrade.
 type: application
-version: 0.2.0
+version: 0.3.0
 appVersion: "latest"
 keywords:
   - nginx

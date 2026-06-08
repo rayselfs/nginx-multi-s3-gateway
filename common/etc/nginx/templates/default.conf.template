@@ -26,6 +26,14 @@ map $uri_full_path $uri_path {
     default $PREFIX_LEADING_DIRECTORY_PATH$uri_full_path;
 }
 
+# Cache bypass: set $no_cache=1 for URIs matching PROXY_CACHE_BYPASS_PATHS.
+# The value is a PCRE alternation pattern (e.g. "\.json$|\.sh$").
+# When no paths are configured the env var is "^$" which never matches a URI.
+map $uri_full_path $no_cache {
+    default 0;
+    "~${PROXY_CACHE_BYPASS_PATHS}" 1;
+}
+
 # ---------------------------------------------------------------------------
 # Dynamic bucket routing via X-S3-Bucket request header (whitelist).
 # The bucket map is rendered by Helm and mounted as a ConfigMap at:
@@ -70,6 +78,9 @@ server {
     proxy_cache_background_update on;
     proxy_cache_lock on;
     proxy_cache_use_stale ${PROXY_CACHE_USE_STALE};
+    # Bypass cache for URIs matched by PROXY_CACHE_BYPASS_PATHS (set via $no_cache map).
+    proxy_cache_bypass $no_cache;
+    proxy_no_cache $no_cache;
     proxy_cache_key "$request_method$host$uri";
 
     # If you need to support proxying range request, refer to this article:
