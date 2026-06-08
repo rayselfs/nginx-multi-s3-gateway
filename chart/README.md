@@ -7,7 +7,7 @@ Helm chart for deploying [nginx-multi-s3-gateway](https://github.com/rayselfs/ng
 ```bash
 helm install my-gateway \
   oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway \
-  --version 0.3.1 \
+  --version 0.4.0 \
   --namespace my-namespace \
   --create-namespace \
   --set s3.bucketName=my-default-bucket \
@@ -47,7 +47,7 @@ EOF
 
 helm install my-gateway \
   oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway \
-  --version 0.3.1 \
+  --version 0.4.0 \
   --namespace my-namespace \
   --create-namespace \
   -f values.yaml
@@ -70,7 +70,7 @@ EOF
 
 helm install my-gateway \
   oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway \
-  --version 0.3.1 \
+  --version 0.4.0 \
   --namespace my-namespace \
   --create-namespace \
   -f values.yaml
@@ -122,7 +122,7 @@ Edit the `buckets` list in your `values.yaml`, then:
 ```bash
 helm upgrade my-gateway \
   oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway \
-  --version 0.3.1 \
+  --version 0.4.0 \
   --namespace my-namespace \
   -f values.yaml
 ```
@@ -170,7 +170,7 @@ helm upgrade my-gateway \
 | Style | Host header | When to use |
 |---|---|---|
 | `virtual` | `<bucket>.s3.amazonaws.com` | Standard AWS S3 (recommended) |
-| `virtual-v2` | `<bucket>.s3.amazonaws.com:443` | Non-standard S3-compatible APIs requiring explicit port |
+| `virtual-v2` | `<bucket>.s3.amazonaws.com:443` | Recommended for AWS S3; required for S3 Express One Zone |
 | `path` | `s3.amazonaws.com:443` | Path-style access, legacy, or VPC gateway endpoints |
 
 ### Bucket Routing
@@ -264,7 +264,7 @@ replicaCount: 3
 
 image:
   repository: ghcr.io/rayselfs/nginx-multi-s3-gateway
-  tag: "0.3.1"
+  tag: "0.4.0"
 
 s3:
   bucketName: my-default-bucket

@@ -41,7 +41,7 @@ Client  ────────────────────────
 ```bash
 helm install my-gateway \
   oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway \
-  --version 0.3.1 \
+  --version 0.4.0 \
   --namespace my-namespace \
   --create-namespace \
   --set s3.bucketName=my-default-bucket \
@@ -60,7 +60,7 @@ See [Configuration](#configuration) for credentials and all available options.
 ```bash
 helm upgrade my-gateway \
   oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway \
-  --version 0.3.1 \
+  --version 0.4.0 \
   --namespace my-namespace \
   -f values.yaml
 ```
@@ -206,7 +206,7 @@ Buckets **not** in the list silently fall back to `s3.bucketName`.
 | Style | Host header | Use case |
 |---|---|---|
 | `virtual` (default) | `<bucket>.s3.amazonaws.com` | AWS S3, standard |
-| `virtual-v2` | `<bucket>.s3.amazonaws.com:443` | Some MinIO / non-AWS setups |
+| `virtual-v2` | `<bucket>.s3.amazonaws.com:443` | Recommended for AWS S3; required for S3 Express One Zone |
 | `path` | `s3.amazonaws.com:443` | Path-style access (legacy / VPC endpoints) |
 
 ### Scaling
