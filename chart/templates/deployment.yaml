@@ -71,6 +71,8 @@ spec:
               value: {{ .Values.s3.region | quote }}
             - name: S3_STYLE
               value: {{ .Values.s3.style | quote }}
+            - name: S3_SERVICE
+              value: {{ .Values.s3.service | quote }}
             # --- AWS signature ---
             - name: AWS_SIGS_VERSION
               value: {{ .Values.aws.sigVersion | quote }}
@@ -85,6 +87,10 @@ spec:
               value: {{ .Values.nginx.proxyCacheUseStale | quote }}
             - name: PROXY_CACHE_SLICE_SIZE
               value: {{ .Values.nginx.proxyCacheSliceSize | quote }}
+            - name: PROXY_CACHE_MAX_SIZE
+              value: {{ .Values.nginx.proxyCacheMaxSize | quote }}
+            - name: PROXY_CACHE_INACTIVE
+              value: {{ .Values.nginx.proxyCacheInactive | quote }}
             # --- CORS / methods ---
             # Upstream entrypoint derives LIMIT_METHODS_TO and LIMIT_METHODS_TO_CSV from this.
             - name: CORS_ENABLED
@@ -110,6 +116,50 @@ spec:
             - name: DNS_RESOLVERS
               value: {{ .Values.nginx.dnsResolvers | quote }}
             {{- end }}
+            {{- if .Values.aws.debug }}
+            - name: DEBUG
+              value: "1"
+            {{- end }}
+            {{- if .Values.nginx.provideIndexPage }}
+            - name: PROVIDE_INDEX_PAGE
+              value: "1"
+            {{- end }}
+            {{- if .Values.nginx.appendSlashForPossibleDirectory }}
+            - name: APPEND_SLASH_FOR_POSSIBLE_DIRECTORY
+              value: "1"
+            {{- end }}
+            {{- if .Values.nginx.jsTrustedCertPath }}
+            - name: JS_TRUSTED_CERT_PATH
+              value: {{ .Values.nginx.jsTrustedCertPath | quote }}
+            {{- end }}
+            {{- if .Values.nginx.headerPrefixesToStrip }}
+            - name: HEADER_PREFIXES_TO_STRIP
+              value: {{ .Values.nginx.headerPrefixesToStrip | quote }}
+            {{- end }}
+            {{- if .Values.nginx.headerPrefixesAllowed }}
+            - name: HEADER_PREFIXES_ALLOWED
+              value: {{ .Values.nginx.headerPrefixesAllowed | quote }}
+            {{- end }}
+            {{- if .Values.nginx.corsAllowedOrigin }}
+            - name: CORS_ALLOWED_ORIGIN
+              value: {{ .Values.nginx.corsAllowedOrigin | quote }}
+            {{- end }}
+            {{- if .Values.nginx.corsAllowPrivateNetworkAccess }}
+            - name: CORS_ALLOW_PRIVATE_NETWORK_ACCESS
+              value: {{ .Values.nginx.corsAllowPrivateNetworkAccess | quote }}
+            {{- end }}
+            {{- if .Values.aws.roleSessionName }}
+            - name: AWS_ROLE_SESSION_NAME
+              value: {{ .Values.aws.roleSessionName | quote }}
+            {{- end }}
+            {{- if .Values.aws.stsEndpoint }}
+            - name: STS_ENDPOINT
+              value: {{ .Values.aws.stsEndpoint | quote }}
+            {{- end }}
+            {{- if .Values.aws.stsRegionalEndpoints }}
+            - name: AWS_STS_REGIONAL_ENDPOINTS
+              value: {{ .Values.aws.stsRegionalEndpoints | quote }}
+            {{- end }}
             # --- Non-IRSA AWS credentials (omit when using IRSA) ---
             {{- if .Values.s3.existingSecret }}
             - name: AWS_ACCESS_KEY_ID
@@ -122,6 +172,12 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.s3.existingSecret }}
                   key: AWS_SECRET_ACCESS_KEY
+            - name: AWS_SESSION_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.s3.existingSecret }}
+                  key: AWS_SESSION_TOKEN
+                  optional: true
             {{- end }}
           volumeMounts:
             # bucket-map.conf is mounted via subPath so it does not affect

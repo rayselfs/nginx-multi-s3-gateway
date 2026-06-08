@@ -276,13 +276,27 @@ Exposes `/stub_status` on port 9113 via a sidecar container.
 | `s3.serverProto` | `https` | `https` or `http` |
 | `s3.region` | `us-east-1` | AWS region |
 | `s3.style` | `virtual` | URL style: `virtual` / `virtual-v2` / `path` |
-| `s3.existingSecret` | `""` | Secret name with `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` |
+| `s3.service` | `s3` | S3 service type: `s3` / `s3express` (S3 Express One Zone) |
+| `s3.existingSecret` | `""` | Secret name with `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN` (optional key) |
 | `aws.sigVersion` | `"4"` | AWS Signature version (`4` or `2`) |
+| `aws.debug` | `false` | Enable AWS signature debug output |
+| `aws.roleSessionName` | `""` | Override role session name (default: `nginx-s3-gateway`) |
+| `aws.stsEndpoint` | `""` | Override STS endpoint URL |
+| `aws.stsRegionalEndpoints` | `""` | STS endpoint mode: `global` / `regional` (ignored if `stsEndpoint` is set) |
 | `buckets` | `[]` | Bucket whitelist (see Multi-bucket Routing) |
 | `serviceAccount.annotations` | `{}` | Use for IRSA role ARN |
 | `nginx.corsEnabled` | `false` | Enable CORS (adds OPTIONS to allowed methods) |
+| `nginx.corsAllowedOrigin` | `""` | `Access-Control-Allow-Origin` value (only when corsEnabled, default: `*`) |
+| `nginx.corsAllowPrivateNetworkAccess` | `""` | Respond to `Access-Control-Request-Private-Network` with this value (`true`/`false`/`""`) |
 | `nginx.allowDirectoryList` | `false` | Enable S3 directory listing |
+| `nginx.provideIndexPage` | `false` | Serve `index.html` when a directory path is requested |
+| `nginx.appendSlashForPossibleDirectory` | `false` | Return 302 with trailing `/` for paths that look like directories |
+| `nginx.proxyCacheMaxSize` | `10g` | Maximum total proxy cache size on disk |
+| `nginx.proxyCacheInactive` | `60m` | Evict cached data not accessed within this time |
 | `nginx.dnsResolvers` | `""` | Override NGINX DNS resolver (auto-detected if empty) |
+| `nginx.jsTrustedCertPath` | `""` | Path to trusted CA cert for STS calls (needed for non-EKS IRSA) |
+| `nginx.headerPrefixesToStrip` | `""` | Semicolon-separated header prefixes to remove from S3 responses (e.g. `x-goog-;x-custom-`) |
+| `nginx.headerPrefixesAllowed` | `""` | Semicolon-separated header prefixes to pass through to clients (use with caution) |
 | `metrics.enabled` | `false` | Enable nginx-prometheus-exporter sidecar |
 | `metrics.serviceMonitor.enabled` | `false` | Create Prometheus ServiceMonitor |
 | `autoscaling.enabled` | `false` | Enable HPA |
