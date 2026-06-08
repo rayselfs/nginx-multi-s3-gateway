@@ -79,12 +79,23 @@ s3:
   #   virtual-v2 - Host header = <bucket>.<server>:<port>  (some MinIO setups)
   #   path       - Host header = <server>:<port>, bucket in URI path
   style: virtual
+  # S3 service type: s3 | s3express (S3 Express One Zone / Directory Buckets)
+  service: "s3"
   # Non-IRSA only: name of a pre-existing Secret with keys:
-  #   AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
+  #   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and optionally AWS_SESSION_TOKEN
   existingSecret: ""
 
 aws:
   sigVersion: "4"
+  # Enable AWS signature debug output
+  debug: false
+  # Optional: value for the Role Session Name (default: nginx-s3-gateway)
+  roleSessionName: ""
+  # Optional: override the STS endpoint (e.g. for custom VPC endpoints)
+  stsEndpoint: ""
+  # Optional: select regional STS endpoint. Ignored if stsEndpoint is set.
+  # Valid values: global | regional
+  stsRegionalEndpoints: ""
 
 # ---------------------------------------------------------------------------
 # NGINX tuning
@@ -95,8 +106,20 @@ nginx:
   proxyCacheValidForbidden: "30s"
   proxyCacheUseStale: "error timeout updating http_500 http_502 http_503 http_504"
   proxyCacheSliceSize: "1m"
+  # Maximum total size of the proxy cache on disk
+  proxyCacheMaxSize: "10g"
+  # Cached data not accessed within this time are evicted regardless of freshness
+  proxyCacheInactive: "60m"
   corsEnabled: false
+  # Value for Access-Control-Allow-Origin (only used when corsEnabled=true, default: *)
+  corsAllowedOrigin: ""
+  # Respond to Access-Control-Request-Private-Network with this value (true/false/"")
+  corsAllowPrivateNetworkAccess: ""
   allowDirectoryList: false
+  # Serve index.html when a directory path is requested
+  provideIndexPage: false
+  # Return 302 with trailing slash when path looks like a directory
+  appendSlashForPossibleDirectory: false
   # Optional path rewriting
   stripLeadingDirectoryPath: ""
   prefixLeadingDirectoryPath: ""
@@ -105,6 +128,14 @@ nginx:
   # Leave empty to let the upstream entrypoint auto-detect from /etc/resolv.conf.
   # Example for EKS: "172.20.0.10 valid=5s ipv6=off"
   dnsResolvers: ""
+  # Path on the container to a trusted CA cert for STS calls (needed on non-EKS IRSA)
+  jsTrustedCertPath: ""
+  # Semicolon-separated header prefixes to strip from S3 responses (lowercase)
+  # e.g. "x-goog-;x-custom-"  (x-amz- is always stripped by default)
+  headerPrefixesToStrip: ""
+  # Semicolon-separated header prefixes allowed through to the client (lowercase)
+  # e.g. "x-amz-;x-custom-"  (use with caution)
+  headerPrefixesAllowed: ""
 
 # ---------------------------------------------------------------------------
 # Bucket whitelist
