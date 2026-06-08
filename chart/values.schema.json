@@ -177,9 +177,14 @@
           "enum": ["virtual", "virtual-v2", "path"],
           "description": "S3 URL style. 'virtual' is recommended for AWS S3."
         },
+        "service": {
+          "type": "string",
+          "enum": ["s3", "s3express"],
+          "description": "S3 service type. Use 's3express' for S3 Express One Zone (Directory Buckets)."
+        },
         "existingSecret": {
           "type": "string",
-          "description": "Name of a Secret containing AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY. Omit when using IRSA."
+          "description": "Name of a Secret containing AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and optionally AWS_SESSION_TOKEN. Omit when using IRSA."
         }
       }
     },
@@ -191,6 +196,14 @@
           "type": "string",
           "enum": ["2", "4"],
           "description": "AWS Signature version. Use '4' unless targeting very old S3-compatible APIs."
+        },
+        "debug":               { "type": "boolean", "description": "Enable AWS signature debug output." },
+        "roleSessionName":     { "type": "string",  "description": "Override the role session name. Default: nginx-s3-gateway." },
+        "stsEndpoint":         { "type": "string",  "description": "Override the STS endpoint URL." },
+        "stsRegionalEndpoints": {
+          "type": "string",
+          "enum": ["", "global", "regional"],
+          "description": "STS endpoint mode. Ignored when stsEndpoint is set."
         }
       }
     },
@@ -198,17 +211,26 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "proxyCacheValidOk":         { "type": "string" },
-        "proxyCacheValidNotfound":   { "type": "string" },
-        "proxyCacheValidForbidden":  { "type": "string" },
-        "proxyCacheUseStale":        { "type": "string" },
-        "proxyCacheSliceSize":       { "type": "string" },
-        "corsEnabled":               { "type": "boolean" },
-        "allowDirectoryList":        { "type": "boolean" },
-        "stripLeadingDirectoryPath": { "type": "string" },
-        "prefixLeadingDirectoryPath":{ "type": "string" },
-        "directoryListingPathPrefix":{ "type": "string" },
-        "dnsResolvers":              { "type": "string" }
+        "proxyCacheValidOk":                  { "type": "string" },
+        "proxyCacheValidNotfound":            { "type": "string" },
+        "proxyCacheValidForbidden":           { "type": "string" },
+        "proxyCacheUseStale":                 { "type": "string" },
+        "proxyCacheSliceSize":                { "type": "string" },
+        "proxyCacheMaxSize":                  { "type": "string", "description": "Maximum total proxy cache size on disk." },
+        "proxyCacheInactive":                 { "type": "string", "description": "Evict cached data not accessed within this time." },
+        "corsEnabled":                        { "type": "boolean" },
+        "corsAllowedOrigin":                  { "type": "string", "description": "Value for Access-Control-Allow-Origin. Only used when corsEnabled=true." },
+        "corsAllowPrivateNetworkAccess":      { "type": "string", "description": "Value for Access-Control-Allow-Private-Network response header. Empty string disables the header." },
+        "allowDirectoryList":                 { "type": "boolean" },
+        "provideIndexPage":                   { "type": "boolean", "description": "Serve index.html when a directory path is requested." },
+        "appendSlashForPossibleDirectory":    { "type": "boolean", "description": "Return 302 with trailing slash for paths that look like directories." },
+        "stripLeadingDirectoryPath":          { "type": "string" },
+        "prefixLeadingDirectoryPath":         { "type": "string" },
+        "directoryListingPathPrefix":         { "type": "string" },
+        "dnsResolvers":                       { "type": "string" },
+        "jsTrustedCertPath":                  { "type": "string", "description": "Path to a trusted CA cert on the container for STS calls. Required for non-EKS IRSA setups." },
+        "headerPrefixesToStrip":              { "type": "string", "description": "Semicolon-separated header prefixes to remove from S3 responses (lowercase). e.g. x-goog-;x-custom-" },
+        "headerPrefixesAllowed":              { "type": "string", "description": "Semicolon-separated header prefixes allowed through to the client (lowercase). Use with caution." }
       }
     },
     "buckets": {
