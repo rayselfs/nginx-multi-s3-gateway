@@ -7,7 +7,7 @@ A **thin Docker overlay** on `nginxinc/nginx-s3-gateway`. Only 4 upstream files 
 | Local file | Why overridden |
 |---|---|
 | `common/etc/nginx/templates/default.conf.template` | Adds `map` blocks for X-S3-Bucket routing |
-| `oss/etc/nginx/templates/upstreams.conf.template` | Adds keepalive + per-bucket upstream blocks |
+| `oss/etc/nginx/templates/upstreams.conf.template` | Adds keepalive + includes Helm-rendered per-bucket upstream blocks (`per-bucket-upstreams.conf`) |
 | `common/etc/nginx/templates/gateway/s3_location_common.conf.template` | Uses per-request `$s3_host` / `$s3_upstream` vars |
 | `common/etc/nginx/include/s3gateway.js` | Adds `_resolveBucket()` for per-request bucket resolution |
 

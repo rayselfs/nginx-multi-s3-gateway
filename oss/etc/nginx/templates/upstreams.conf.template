@@ -15,26 +15,14 @@ upstream storage_urls {
 }
 
 # ---------------------------------------------------------------------------
-# Per-bucket upstreams (for S3_STYLE=virtual-v2 only)
+# Per-bucket upstreams for S3_STYLE=virtual-v2.
 #
-# For S3_STYLE=virtual (default) and S3_STYLE=path, the default storage_urls
-# upstream above is sufficient – all buckets share the same S3 endpoint and
-# the Host header alone identifies the bucket.
+# For virtual-v2 each bucket needs its own upstream because the TCP connection
+# target differs per bucket (bucket-name.s3.amazonaws.com). For virtual/path
+# style the storage_urls upstream above is sufficient.
 #
-# For S3_STYLE=virtual-v2, the DNS target includes the bucket name
-# (e.g. bucket.s3.amazonaws.com), so each bucket needs its own upstream.
-# Uncomment and duplicate the block below for every bucket you added to the
-# map directives in default.conf.template.
-#
-# upstream storage_bucket_prod {
-#     zone s3_bucket_prod 64k;
-#     server bucket-prod.${S3_SERVER}:${S3_SERVER_PORT} resolve;
-#     keepalive 32;
-# }
-#
-# upstream storage_bucket_staging {
-#     zone s3_bucket_staging 64k;
-#     server bucket-staging.${S3_SERVER}:${S3_SERVER_PORT} resolve;
-#     keepalive 32;
-# }
+# This file is rendered by Helm and mounted as a ConfigMap at:
+#   /etc/nginx/conf.d/gateway/per-bucket-upstreams.conf
+# It is empty when S3_STYLE != virtual-v2 or no extra buckets are defined.
 # ---------------------------------------------------------------------------
+include /etc/nginx/conf.d/gateway/per-bucket-upstreams.conf;
