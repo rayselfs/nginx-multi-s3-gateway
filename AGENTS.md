@@ -44,6 +44,24 @@ helm lint chart/
 
 SA name default: `<release-name>-nginx-multi-s3-gateway`. If `fullnameOverride: nginx-multi-s3-gateway` is set, SA name is just `nginx-multi-s3-gateway`.
 
+## ⚠️ Mandatory doc sync on every chart change
+
+**Every chart change (new value, behavior change, version bump) MUST include all of the following updates in the same PR — no exceptions:**
+
+| What to update | Where |
+|---|---|
+| All `--version X.Y.Z` version strings | `README.md`, `chart/README.md` |
+| `tag: "X.Y.Z"` version string | `chart/README.md` (Full production setup example) |
+| New value description and usage example | `README.md` Configuration section |
+| New value table row | `README.md` Full values reference table, `chart/README.md` corresponding section table |
+
+Quick check for missed version strings (replace `0.X.Y` with the old version):
+```bash
+grep -rn "0\.X\.Y" README.md chart/README.md
+```
+
+> **Why**: `release.yml` auto-stamps `chart/Chart.yaml` via `sed`, but version strings in READMEs are maintained entirely by hand. Missing an update causes users to install the wrong version.
+
 ## CI / Release
 
 | Workflow | Trigger | What it does |
