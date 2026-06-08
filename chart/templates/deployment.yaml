@@ -14,8 +14,8 @@ spec:
   template:
     metadata:
       annotations:
-        # Triggers rolling restart when bucket whitelist ConfigMap changes.
-        checksum/config: {{ include (print $.Template.BasePath "/configmap-bucket.yaml") . | sha256sum }}
+        # Triggers rolling restart when bucket whitelist or per-bucket upstream ConfigMap changes.
+        checksum/config: {{ list (include (print $.Template.BasePath "/configmap-bucket.yaml") .) (include (print $.Template.BasePath "/configmap-upstreams.yaml") .) | join "" | sha256sum }}
         {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
@@ -186,6 +186,14 @@ spec:
               mountPath: /etc/nginx/conf.d/gateway/bucket-map.conf
               subPath: bucket-map.conf
               readOnly: true
+            # per-bucket-upstreams.conf is rendered by Helm and contains upstream
+            # blocks for each whitelisted bucket when S3_STYLE=virtual-v2.
+            # Empty (comments only) for virtual/path style — always mounted so
+            # the include directive in upstreams.conf.template never fails.
+            - name: per-bucket-upstreams
+              mountPath: /etc/nginx/conf.d/gateway/per-bucket-upstreams.conf
+              subPath: per-bucket-upstreams.conf
+              readOnly: true
           {{- with .Values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
@@ -221,6 +229,9 @@ spec:
         - name: bucket-map
           configMap:
             name: {{ include "nginx-multi-s3-gateway.fullname" . }}-bucket-map
+        - name: per-bucket-upstreams
+          configMap:
+            name: {{ include "nginx-multi-s3-gateway.fullname" . }}-per-bucket-upstreams
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
