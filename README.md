@@ -41,7 +41,7 @@ Client  ────────────────────────
 ```bash
 helm install my-gateway \
   oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway \
-  --version 0.1.1 \
+  --version 0.2.0 \
   --namespace my-namespace \
   --create-namespace \
   --set s3.bucketName=my-default-bucket \
@@ -60,7 +60,7 @@ See [Configuration](#configuration) for credentials and all available options.
 ```bash
 helm upgrade my-gateway \
   oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway \
-  --version 0.1.1 \
+  --version 0.2.0 \
   --namespace my-namespace \
   -f values.yaml
 ```
@@ -260,6 +260,106 @@ metrics:
 
 Exposes `/stub_status` on port 9113 via a sidecar container.  
 `/stub_status` is restricted to `127.0.0.1` in nginx config; the exporter runs in the same pod.
+
+### S3 Express One Zone
+
+Use `s3.service: s3express` for [S3 Express One Zone](https://docs.aws.amazon.com/AmazonS3/latest/userguide/s3-express-one-zone.html) (Directory Buckets). The bucket name must include the full AZ suffix and `S3_SERVER` must point to the zonal endpoint.
+
+```yaml
+# values.yaml
+s3:
+  bucketName: my-bucket--usw2-az1--x-s3
+  server: my-bucket--usw2-az1--x-s3.s3express-usw2-az1.us-west-2.amazonaws.com
+  region: us-west-2
+  style: virtual-v2
+  service: s3express
+```
+
+### Static Site Hosting
+
+Set `nginx.provideIndexPage: true` to serve `index.html` when a directory path is requested. Combine with `nginx.appendSlashForPossibleDirectory` to redirect `/some/path` → `/some/path/` automatically.
+
+```yaml
+# values.yaml
+nginx:
+  provideIndexPage: true
+  appendSlashForPossibleDirectory: true
+```
+
+### CORS
+
+```yaml
+# values.yaml
+nginx:
+  corsEnabled: true
+  corsAllowedOrigin: "https://app.example.com"   # default: * (all origins)
+  # corsAllowPrivateNetworkAccess: "true"         # respond to private network preflights
+```
+
+### Directory Listing
+
+```yaml
+# values.yaml
+nginx:
+  allowDirectoryList: true
+  directoryListingPathPrefix: "/files/"   # optional: prefix links in listing output
+```
+
+### Path Rewriting
+
+Strip or replace a leading path segment — useful when the gateway is behind an ALB/ingress under a subpath.
+
+```yaml
+# values.yaml
+nginx:
+  stripLeadingDirectoryPath: /assets          # remove /assets prefix before forwarding to S3
+  prefixLeadingDirectoryPath: /static         # prepend /static to all S3 object paths
+```
+
+### Header Filtering
+
+Strip custom vendor headers from S3 responses, or selectively allow specific prefixes through.
+
+```yaml
+# values.yaml
+nginx:
+  headerPrefixesToStrip: "x-goog-;x-custom-"   # semicolon-separated, lowercase
+  headerPrefixesAllowed: ""                     # override allow-list (use with caution)
+```
+
+### Static Credentials with Session Token
+
+For temporary credentials (e.g. assumed role), include `AWS_SESSION_TOKEN` in the secret. The chart mounts it as an optional key — the pod will still start if the key is absent.
+
+```bash
+kubectl create secret generic aws-temp-creds \
+  --namespace my-namespace \
+  --from-literal=AWS_ACCESS_KEY_ID=ASIA... \
+  --from-literal=AWS_SECRET_ACCESS_KEY=... \
+  --from-literal=AWS_SESSION_TOKEN=...
+```
+
+```yaml
+# values.yaml
+s3:
+  bucketName: my-default-bucket
+  region: us-east-1
+  existingSecret: aws-temp-creds
+```
+
+### Custom STS Endpoint (non-EKS IRSA)
+
+For self-managed Kubernetes using projected service account tokens (IRSA-compatible), set `nginx.jsTrustedCertPath` to the CA cert path used for STS calls. Optionally override the STS endpoint for VPC or regional setups.
+
+```yaml
+# values.yaml
+nginx:
+  jsTrustedCertPath: /etc/ssl/certs/ca-certificates.crt
+
+aws:
+  stsRegionalEndpoints: regional   # or set stsEndpoint for a fully custom URL
+  # stsEndpoint: "https://sts.ap-northeast-1.amazonaws.com"
+```
 
 ---
 
