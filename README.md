@@ -41,7 +41,7 @@ Client  ────────────────────────
 ```bash
 helm install my-gateway \
   oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway \
-  --version 0.3.0 \
+  --version 0.3.1 \
   --namespace my-namespace \
   --create-namespace \
   --set s3.bucketName=my-default-bucket \
@@ -60,7 +60,7 @@ See [Configuration](#configuration) for credentials and all available options.
 ```bash
 helm upgrade my-gateway \
   oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway \
-  --version 0.3.0 \
+  --version 0.3.1 \
   --namespace my-namespace \
   -f values.yaml
 ```
