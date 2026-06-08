@@ -41,7 +41,7 @@ Client  ────────────────────────
 ```bash
 helm install my-gateway \
   oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway \
-  --version 0.2.0 \
+  --version 0.3.0 \
   --namespace my-namespace \
   --create-namespace \
   --set s3.bucketName=my-default-bucket \
@@ -60,7 +60,7 @@ See [Configuration](#configuration) for credentials and all available options.
 ```bash
 helm upgrade my-gateway \
   oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway \
-  --version 0.2.0 \
+  --version 0.3.0 \
   --namespace my-namespace \
   -f values.yaml
 ```
@@ -327,6 +327,20 @@ nginx:
   headerPrefixesAllowed: ""                     # override allow-list (use with caution)
 ```
 
+### Cache Bypass (per-path)
+
+Skip the proxy cache for specific URI patterns. Useful for file types that should never be served stale (e.g. manifests, scripts).
+
+```yaml
+# values.yaml
+nginx:
+  proxyCacheBypassPaths:
+    - '\.json$'
+    - '\.sh$'
+```
+
+Patterns are PCRE and OR-combined at render time. An empty list (default) disables per-path bypass.
+
 ### Static Credentials with Session Token
 
 For temporary credentials (e.g. assumed role), include `AWS_SESSION_TOKEN` in the secret. The chart mounts it as an optional key — the pod will still start if the key is absent.
@@ -397,6 +411,7 @@ aws:
 | `nginx.jsTrustedCertPath` | `""` | Path to trusted CA cert for STS calls (needed for non-EKS IRSA) |
 | `nginx.headerPrefixesToStrip` | `""` | Semicolon-separated header prefixes to remove from S3 responses (e.g. `x-goog-;x-custom-`) |
 | `nginx.headerPrefixesAllowed` | `""` | Semicolon-separated header prefixes to pass through to clients (use with caution) |
+| `nginx.proxyCacheBypassPaths` | `[]` | PCRE patterns for paths that bypass the proxy cache (OR-combined); empty disables |
 | `metrics.enabled` | `false` | Enable nginx-prometheus-exporter sidecar |
 | `metrics.serviceMonitor.enabled` | `false` | Create Prometheus ServiceMonitor |
 | `autoscaling.enabled` | `false` | Enable HPA |

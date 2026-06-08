@@ -91,6 +91,8 @@ spec:
               value: {{ .Values.nginx.proxyCacheMaxSize | quote }}
             - name: PROXY_CACHE_INACTIVE
               value: {{ .Values.nginx.proxyCacheInactive | quote }}
+            - name: PROXY_CACHE_BYPASS_PATHS
+              value: {{ if .Values.nginx.proxyCacheBypassPaths }}{{ join "|" .Values.nginx.proxyCacheBypassPaths | quote }}{{ else }}"^$"{{ end }}
             # --- CORS / methods ---
             # Upstream entrypoint derives LIMIT_METHODS_TO and LIMIT_METHODS_TO_CSV from this.
             - name: CORS_ENABLED

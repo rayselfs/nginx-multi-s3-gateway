@@ -230,7 +230,12 @@
         "dnsResolvers":                       { "type": "string" },
         "jsTrustedCertPath":                  { "type": "string", "description": "Path to a trusted CA cert on the container for STS calls. Required for non-EKS IRSA setups." },
         "headerPrefixesToStrip":              { "type": "string", "description": "Semicolon-separated header prefixes to remove from S3 responses (lowercase). e.g. x-goog-;x-custom-" },
-        "headerPrefixesAllowed":              { "type": "string", "description": "Semicolon-separated header prefixes allowed through to the client (lowercase). Use with caution." }
+        "headerPrefixesAllowed":              { "type": "string", "description": "Semicolon-separated header prefixes allowed through to the client (lowercase). Use with caution." },
+        "proxyCacheBypassPaths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "PCRE regex patterns for request paths that bypass the proxy cache. Patterns are OR-combined."
+        }
       }
     },
     "buckets": {
