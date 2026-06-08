@@ -81,7 +81,7 @@ server {
     # Bypass cache for URIs matched by PROXY_CACHE_BYPASS_PATHS (set via $no_cache map).
     proxy_cache_bypass $no_cache;
     proxy_no_cache $no_cache;
-    proxy_cache_key "$request_method$host$uri";
+    proxy_cache_key "$request_method$host$s3_bucket_name_var$uri";
 
     # If you need to support proxying range request, refer to this article:
     # https://www.nginx.com/blog/smart-efficient-byte-range-caching-nginx/
@@ -141,7 +141,7 @@ server {
     location @s3_sliced {
         proxy_cache s3_cache_slices;
         proxy_cache_valid 200 302 206 ${PROXY_CACHE_VALID_OK};
-        proxy_cache_key "$request_method$host$uri$slice_range";
+        proxy_cache_key "$request_method$host$s3_bucket_name_var$uri$slice_range";
 
         slice             ${PROXY_CACHE_SLICE_SIZE};
         proxy_set_header   Range $slice_range;
