@@ -30,18 +30,18 @@ Client  ────────────────────────
 
 ## Prerequisites
 
-| Requirement | Version |
-|---|---|
-| Kubernetes | 1.25+ |
-| Helm | 3.10+ |
-| AWS | S3 access via EKS Pod Identity (recommended), IRSA, or static credentials |
+| Requirement | Version                                                                   |
+| ----------- | ------------------------------------------------------------------------- |
+| Kubernetes  | 1.25+                                                                     |
+| Helm        | 3.10+                                                                     |
+| AWS         | S3 access via EKS Pod Identity (recommended), IRSA, or static credentials |
 
 ## Installation
 
 ```bash
 helm install my-gateway \
   oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway \
-  --version 0.4.0 \
+  --version 0.4.1 \
   --namespace my-namespace \
   --create-namespace \
   --set s3.bucketName=my-default-bucket \
@@ -49,6 +49,7 @@ helm install my-gateway \
 ```
 
 > **Private registry only**: if the GHCR package is private, authenticate first:
+>
 > ```bash
 > echo $GITHUB_TOKEN | helm registry login ghcr.io --username <username> --password-stdin
 > ```
@@ -60,7 +61,7 @@ See [Configuration](#configuration) for credentials and all available options.
 ```bash
 helm upgrade my-gateway \
   oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway \
-  --version 0.4.0 \
+  --version 0.4.1 \
   --namespace my-namespace \
   -f values.yaml
 ```
@@ -94,11 +95,13 @@ aws eks create-addon \
 ```json
 {
   "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Principal": { "Service": "pods.eks.amazonaws.com" },
-    "Action": ["sts:AssumeRole", "sts:TagSession"]
-  }]
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": { "Service": "pods.eks.amazonaws.com" },
+      "Action": ["sts:AssumeRole", "sts:TagSession"]
+    }
+  ]
 }
 ```
 
@@ -132,19 +135,20 @@ Requires an OIDC provider associated with the cluster. Use when the Pod Identity
 ```json
 {
   "Version": "2012-10-17",
-  "Statement": [{
-    "Effect": "Allow",
-    "Principal": {
-      "Federated": "arn:aws:iam::123456789012:oidc-provider/oidc.eks.ap-northeast-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE"
-    },
-    "Action": "sts:AssumeRoleWithWebIdentity",
-    "Condition": {
-      "StringEquals": {
-        "oidc.eks.ap-northeast-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE:sub":
-          "system:serviceaccount:my-namespace:my-gateway-nginx-multi-s3-gateway"
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Federated": "arn:aws:iam::123456789012:oidc-provider/oidc.eks.ap-northeast-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE"
+      },
+      "Action": "sts:AssumeRoleWithWebIdentity",
+      "Condition": {
+        "StringEquals": {
+          "oidc.eks.ap-northeast-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE:sub": "system:serviceaccount:my-namespace:my-gateway-nginx-multi-s3-gateway"
+        }
       }
     }
-  }]
+  ]
 }
 ```
 
@@ -183,9 +187,9 @@ s3:
 ```yaml
 # values.yaml
 s3:
-  bucketName: my-default-bucket   # fallback
+  bucketName: my-default-bucket # fallback
   region: ap-northeast-1
-  style: virtual                  # virtual | virtual-v2 | path
+  style: virtual # virtual | virtual-v2 | path
 
 buckets:
   - name: bucket-prod
@@ -203,11 +207,11 @@ Buckets **not** in the list silently fall back to `s3.bucketName`.
 
 #### S3 Style
 
-| Style | Host header | Use case |
-|---|---|---|
-| `virtual` (default) | `<bucket>.s3.amazonaws.com` | AWS S3, standard |
-| `virtual-v2` | `<bucket>.s3.amazonaws.com:443` | Recommended for AWS S3; required for S3 Express One Zone |
-| `path` | `s3.amazonaws.com:443` | Path-style access (legacy / VPC endpoints) |
+| Style               | Host header                     | Use case                                                 |
+| ------------------- | ------------------------------- | -------------------------------------------------------- |
+| `virtual` (default) | `<bucket>.s3.amazonaws.com`     | AWS S3, standard                                         |
+| `virtual-v2`        | `<bucket>.s3.amazonaws.com:443` | Recommended for AWS S3; required for S3 Express One Zone |
+| `path`              | `s3.amazonaws.com:443`          | Path-style access (legacy / VPC endpoints)               |
 
 ### Scaling
 
@@ -255,7 +259,7 @@ metrics:
   serviceMonitor:
     enabled: true
     labels:
-      release: prometheus   # match your Prometheus operator selector
+      release: prometheus # match your Prometheus operator selector
 ```
 
 Exposes `/stub_status` on port 9113 via a sidecar container.  
@@ -292,7 +296,7 @@ nginx:
 # values.yaml
 nginx:
   corsEnabled: true
-  corsAllowedOrigin: "https://app.example.com"   # default: * (all origins)
+  corsAllowedOrigin: "https://app.example.com" # default: * (all origins)
   # corsAllowPrivateNetworkAccess: "true"         # respond to private network preflights
 ```
 
@@ -302,7 +306,7 @@ nginx:
 # values.yaml
 nginx:
   allowDirectoryList: true
-  directoryListingPathPrefix: "/files/"   # optional: prefix links in listing output
+  directoryListingPathPrefix: "/files/" # optional: prefix links in listing output
 ```
 
 ### Path Rewriting
@@ -312,8 +316,8 @@ Strip or replace a leading path segment — useful when the gateway is behind an
 ```yaml
 # values.yaml
 nginx:
-  stripLeadingDirectoryPath: /assets          # remove /assets prefix before forwarding to S3
-  prefixLeadingDirectoryPath: /static         # prepend /static to all S3 object paths
+  stripLeadingDirectoryPath: /assets # remove /assets prefix before forwarding to S3
+  prefixLeadingDirectoryPath: /static # prepend /static to all S3 object paths
 ```
 
 ### Header Filtering
@@ -323,8 +327,8 @@ Strip custom vendor headers from S3 responses, or selectively allow specific pre
 ```yaml
 # values.yaml
 nginx:
-  headerPrefixesToStrip: "x-goog-;x-custom-"   # semicolon-separated, lowercase
-  headerPrefixesAllowed: ""                     # override allow-list (use with caution)
+  headerPrefixesToStrip: "x-goog-;x-custom-" # semicolon-separated, lowercase
+  headerPrefixesAllowed: "" # override allow-list (use with caution)
 ```
 
 ### Cache Bypass (per-path)
@@ -371,7 +375,7 @@ nginx:
   jsTrustedCertPath: /etc/ssl/certs/ca-certificates.crt
 
 aws:
-  stsRegionalEndpoints: regional   # or set stsEndpoint for a fully custom URL
+  stsRegionalEndpoints: regional # or set stsEndpoint for a fully custom URL
   # stsEndpoint: "https://sts.ap-northeast-1.amazonaws.com"
 ```
 
@@ -379,44 +383,44 @@ aws:
 
 ## Full values reference
 
-| Key | Default | Description |
-|---|---|---|
-| `replicaCount` | `2` | Pod replicas (ignored when autoscaling enabled) |
-| `image.repository` | `ghcr.io/rayselfs/nginx-multi-s3-gateway` | Container image |
-| `image.tag` | `""` (→ appVersion) | Image tag override |
-| `s3.bucketName` | `""` (**required**) | Default/fallback S3 bucket |
-| `s3.server` | `s3.amazonaws.com` | S3 endpoint hostname |
-| `s3.serverPort` | `443` | S3 endpoint port |
-| `s3.serverProto` | `https` | `https` or `http` |
-| `s3.region` | `us-east-1` | AWS region |
-| `s3.style` | `virtual` | URL style: `virtual` / `virtual-v2` / `path` |
-| `s3.service` | `s3` | S3 service type: `s3` / `s3express` (S3 Express One Zone) |
-| `s3.existingSecret` | `""` | Secret name with `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN` (optional key) |
-| `aws.sigVersion` | `"4"` | AWS Signature version (`4` or `2`) |
-| `aws.debug` | `false` | Enable AWS signature debug output |
-| `aws.roleSessionName` | `""` | Override role session name (default: `nginx-s3-gateway`) |
-| `aws.stsEndpoint` | `""` | Override STS endpoint URL |
-| `aws.stsRegionalEndpoints` | `""` | STS endpoint mode: `global` / `regional` (ignored if `stsEndpoint` is set) |
-| `buckets` | `[]` | Bucket whitelist (see Multi-bucket Routing) |
-| `serviceAccount.annotations` | `{}` | Use for IRSA role ARN |
-| `nginx.corsEnabled` | `false` | Enable CORS (adds OPTIONS to allowed methods) |
-| `nginx.corsAllowedOrigin` | `""` | `Access-Control-Allow-Origin` value (only when corsEnabled, default: `*`) |
-| `nginx.corsAllowPrivateNetworkAccess` | `""` | Respond to `Access-Control-Request-Private-Network` with this value (`true`/`false`/`""`) |
-| `nginx.allowDirectoryList` | `false` | Enable S3 directory listing |
-| `nginx.provideIndexPage` | `false` | Serve `index.html` when a directory path is requested |
-| `nginx.appendSlashForPossibleDirectory` | `false` | Return 302 with trailing `/` for paths that look like directories |
-| `nginx.proxyCacheMaxSize` | `10g` | Maximum total proxy cache size on disk |
-| `nginx.proxyCacheInactive` | `60m` | Evict cached data not accessed within this time |
-| `nginx.dnsResolvers` | `""` | Override NGINX DNS resolver (auto-detected if empty) |
-| `nginx.jsTrustedCertPath` | `""` | Path to trusted CA cert for STS calls (needed for non-EKS IRSA) |
-| `nginx.headerPrefixesToStrip` | `""` | Semicolon-separated header prefixes to remove from S3 responses (e.g. `x-goog-;x-custom-`) |
-| `nginx.headerPrefixesAllowed` | `""` | Semicolon-separated header prefixes to pass through to clients (use with caution) |
-| `nginx.proxyCacheBypassPaths` | `[]` | PCRE patterns for paths that bypass the proxy cache (OR-combined); empty disables |
-| `metrics.enabled` | `false` | Enable nginx-prometheus-exporter sidecar |
-| `metrics.serviceMonitor.enabled` | `false` | Create Prometheus ServiceMonitor |
-| `autoscaling.enabled` | `false` | Enable HPA |
-| `pdb.enabled` | `true` | Enable PodDisruptionBudget |
-| `ingress.enabled` | `false` | Create Ingress resource |
+| Key                                     | Default                                   | Description                                                                                         |
+| --------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `replicaCount`                          | `2`                                       | Pod replicas (ignored when autoscaling enabled)                                                     |
+| `image.repository`                      | `ghcr.io/rayselfs/nginx-multi-s3-gateway` | Container image                                                                                     |
+| `image.tag`                             | `""` (→ appVersion)                       | Image tag override                                                                                  |
+| `s3.bucketName`                         | `""` (**required**)                       | Default/fallback S3 bucket                                                                          |
+| `s3.server`                             | `s3.amazonaws.com`                        | S3 endpoint hostname                                                                                |
+| `s3.serverPort`                         | `443`                                     | S3 endpoint port                                                                                    |
+| `s3.serverProto`                        | `https`                                   | `https` or `http`                                                                                   |
+| `s3.region`                             | `us-east-1`                               | AWS region                                                                                          |
+| `s3.style`                              | `virtual`                                 | URL style: `virtual` / `virtual-v2` / `path`                                                        |
+| `s3.service`                            | `s3`                                      | S3 service type: `s3` / `s3express` (S3 Express One Zone)                                           |
+| `s3.existingSecret`                     | `""`                                      | Secret name with `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_SESSION_TOKEN` (optional key) |
+| `aws.sigVersion`                        | `"4"`                                     | AWS Signature version (`4` or `2`)                                                                  |
+| `aws.debug`                             | `false`                                   | Enable AWS signature debug output                                                                   |
+| `aws.roleSessionName`                   | `""`                                      | Override role session name (default: `nginx-s3-gateway`)                                            |
+| `aws.stsEndpoint`                       | `""`                                      | Override STS endpoint URL                                                                           |
+| `aws.stsRegionalEndpoints`              | `""`                                      | STS endpoint mode: `global` / `regional` (ignored if `stsEndpoint` is set)                          |
+| `buckets`                               | `[]`                                      | Bucket whitelist (see Multi-bucket Routing)                                                         |
+| `serviceAccount.annotations`            | `{}`                                      | Use for IRSA role ARN                                                                               |
+| `nginx.corsEnabled`                     | `false`                                   | Enable CORS (adds OPTIONS to allowed methods)                                                       |
+| `nginx.corsAllowedOrigin`               | `""`                                      | `Access-Control-Allow-Origin` value (only when corsEnabled, default: `*`)                           |
+| `nginx.corsAllowPrivateNetworkAccess`   | `""`                                      | Respond to `Access-Control-Request-Private-Network` with this value (`true`/`false`/`""`)           |
+| `nginx.allowDirectoryList`              | `false`                                   | Enable S3 directory listing                                                                         |
+| `nginx.provideIndexPage`                | `false`                                   | Serve `index.html` when a directory path is requested                                               |
+| `nginx.appendSlashForPossibleDirectory` | `false`                                   | Return 302 with trailing `/` for paths that look like directories                                   |
+| `nginx.proxyCacheMaxSize`               | `10g`                                     | Maximum total proxy cache size on disk                                                              |
+| `nginx.proxyCacheInactive`              | `60m`                                     | Evict cached data not accessed within this time                                                     |
+| `nginx.dnsResolvers`                    | `""`                                      | Override NGINX DNS resolver (auto-detected if empty)                                                |
+| `nginx.jsTrustedCertPath`               | `""`                                      | Path to trusted CA cert for STS calls (needed for non-EKS IRSA)                                     |
+| `nginx.headerPrefixesToStrip`           | `""`                                      | Semicolon-separated header prefixes to remove from S3 responses (e.g. `x-goog-;x-custom-`)          |
+| `nginx.headerPrefixesAllowed`           | `""`                                      | Semicolon-separated header prefixes to pass through to clients (use with caution)                   |
+| `nginx.proxyCacheBypassPaths`           | `[]`                                      | PCRE patterns for paths that bypass the proxy cache (OR-combined); empty disables                   |
+| `metrics.enabled`                       | `false`                                   | Enable nginx-prometheus-exporter sidecar                                                            |
+| `metrics.serviceMonitor.enabled`        | `false`                                   | Create Prometheus ServiceMonitor                                                                    |
+| `autoscaling.enabled`                   | `false`                                   | Enable HPA                                                                                          |
+| `pdb.enabled`                           | `true`                                    | Enable PodDisruptionBudget                                                                          |
+| `ingress.enabled`                       | `false`                                   | Create Ingress resource                                                                             |
 
 ---
 
@@ -439,6 +443,7 @@ git push origin v0.1.0
 ```
 
 This will:
+
 1. Build and push the Docker image with tags: `0.1.0`, `0.1`, `0`, `latest`
 2. Stamp `chart/Chart.yaml` with the version
 3. `helm package chart/` and push to `oci://ghcr.io/rayselfs/charts/nginx-multi-s3-gateway`
@@ -462,11 +467,13 @@ docker run --rm -p 8080:80 --env-file .env nginx-multi-s3-gateway:dev
 ```
 
 Test single-bucket access:
+
 ```bash
 curl http://localhost:8080/path/to/object
 ```
 
 Test multi-bucket routing:
+
 ```bash
 curl -H "X-S3-Bucket: bucket-prod" http://localhost:8080/path/to/object
 ```
